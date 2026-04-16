@@ -619,11 +619,37 @@ async function submitAndShowResults() {
 
   document.getElementById('submitOverlay').classList.add('show');
 
-  // Submit via GET with URL params — works cross-origin from GitHub Pages
+  // Submit via hidden form POST to Apps Script — reliable cross-origin method
   try {
-    const params = new URLSearchParams({ data: JSON.stringify(payload) });
-    new Image().src = APPS_SCRIPT_URL + '?' + params.toString();
-    await new Promise(resolve => setTimeout(resolve, 1800));
+    await new Promise((resolve) => {
+      const iframe = document.createElement('iframe');
+      iframe.name = 'submit_frame_' + Date.now();
+      iframe.style.cssText = 'display:none;position:absolute;width:0;height:0;';
+      document.body.appendChild(iframe);
+
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = APPS_SCRIPT_URL;
+      form.target = iframe.name;
+      form.style.display = 'none';
+
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'payload';
+      input.value = JSON.stringify(payload);
+      form.appendChild(input);
+
+      document.body.appendChild(form);
+
+      // Resolve after submit — we can't read the response due to CORS but the data lands
+      setTimeout(() => {
+        try { document.body.removeChild(form); } catch(e) {}
+        try { document.body.removeChild(iframe); } catch(e) {}
+        resolve();
+      }, 2500);
+
+      form.submit();
+    });
   } catch(err) {
     console.log('Submission note:', err);
   }
