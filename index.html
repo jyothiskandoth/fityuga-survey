@@ -619,12 +619,13 @@ async function submitAndShowResults() {
 
   document.getElementById('submitOverlay').classList.add('show');
 
-  if (APPS_SCRIPT_URL && APPS_SCRIPT_URL !== 'YOUR_APPS_SCRIPT_URL_HERE') {
-    try {
-      await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-    } catch(err) { console.error('Submission error:', err); }
-  } else {
-    console.log('Dev mode — response:', payload);
+  // Submit via GET with URL params — works cross-origin from GitHub Pages
+  try {
+    const params = new URLSearchParams({ data: JSON.stringify(payload) });
+    new Image().src = APPS_SCRIPT_URL + '?' + params.toString();
+    await new Promise(resolve => setTimeout(resolve, 1800));
+  } catch(err) {
+    console.log('Submission note:', err);
   }
 
   document.getElementById('submitOverlay').classList.remove('show');
